@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model tbl_filme {
+  id              Int                   @id @default(autoincrement())
+  nome            String                @db.VarChar(45)
+  duracao         DateTime?             @db.Time(0)
+  sinopse         String?               @db.Text
+  data_lancamento DateTime?             @db.Date
+  foto_capa       String?               @db.VarChar(200)
+  link_trailer    String?               @db.VarChar(200)
+  tbl_pais_id     Int?
+  tbl_idioma_id   Int?
+  avaliacoes      tbl_avaliacao[]
+  idioma          tbl_idioma?           @relation("IdiomaFilmes", fields: [tbl_idioma_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_IDIOMA_FILME")
+  pais            tbl_pais?             @relation("PaisFilmes", fields: [tbl_pais_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_PAIS_FILME")
+  atores          tbl_filme_ator[]
+  diretores       tbl_filme_diretor[]
+  generos         tbl_filme_genero[]
+  produtoras      tbl_filme_produtora[]
+
+  @@index([tbl_idioma_id], map: "FK_IDIOMA_FILME")
+  @@index([tbl_pais_id], map: "FK_PAIS_FILME")
+}
+
+model tbl_pais {
+  id         Int             @id @default(autoincrement())
+  nome       String          @db.VarChar(45)
+  filmes     tbl_filme[]     @relation("PaisFilmes")
+  produtoras tbl_produtora[] @relation("PaisProdutoras")
+}
+
+model tbl_idioma {
+  id          Int           @id @default(autoincrement())
+  nome        String        @db.VarChar(45)
+  arquivo_url String?       @db.VarChar(45)
+  filmes      tbl_filme[]   @relation("IdiomaFilmes")
+  legendas    tbl_legenda[]
+}
+
+model tbl_genero {
+  id     Int                @id @default(autoincrement())
+  nome   String             @db.VarChar(45)
+  filmes tbl_filme_genero[]
+}
+
+model tbl_sexo {
+  id        Int           @id @default(autoincrement())
+  descricao String        @db.VarChar(45)
+  atores    tbl_ator[]
+  diretores tbl_diretor[]
+}
+
+model tbl_ator {
+  id             Int                      @id @default(autoincrement())
+  nome           String                   @db.VarChar(45)
+  tbl_sexo_id    Int?
+  sexo           tbl_sexo?                @relation(fields: [tbl_sexo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_SEXO_ATOR")
+  nacionalidades tbl_ator_nacionalidade[]
+  filmes         tbl_filme_ator[]
+
+  @@index([tbl_sexo_id], map: "FK_SEXO_ATOR")
+}
+
+model tbl_diretor {
+  id             Int                         @id @default(autoincrement())
+  nome           String                      @db.VarChar(45)
+  tbl_sexo_id    Int?
+  sexo           tbl_sexo?                   @relation(fields: [tbl_sexo_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_SEXO_DIRETOR")
+  nacionalidades tbl_diretor_nacionalidade[]
+  filmes         tbl_filme_diretor[]
+
+  @@index([tbl_sexo_id], map: "FK_SEXO_DIRETOR")
+}
+
+model tbl_produtora {
+  id          Int                   @id @default(autoincrement())
+  nome        String                @db.VarChar(45)
+  fundacao    String?               @db.VarChar(45)
+  pais        String?               @db.VarChar(20)
+  tbl_pais_id Int?
+  filmes      tbl_filme_produtora[]
+  pais_fk     tbl_pais?             @relation("PaisProdutoras", fields: [tbl_pais_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_PAIS_PRODUTORA")
+
+  @@index([tbl_pais_id], map: "FK_PAIS_PRODUTORA")
+}
+
+model tbl_nacionalidade {
+  id            Int                         @id @default(autoincrement())
+  nacionalidade String                      @db.VarChar(45)
+  atores        tbl_ator_nacionalidade[]
+  diretores     tbl_diretor_nacionalidade[]
+}
+
+model tbl_usuario {
+  id         Int             @id @default(autoincrement())
+  nome       String          @db.VarChar(45)
+  email      String          @db.VarChar(45)
+  senha      String          @db.VarChar(45)
+  avaliacoes tbl_avaliacao[]
+}
+
+model tbl_legenda {
+  id            Int         @id @default(autoincrement())
+  formato       String      @db.VarChar(45)
+  arquivo_url   String?     @db.VarChar(200)
+  sincronizacao String?     @db.VarChar(45)
+  data_criacao  DateTime?   @db.Date
+  tbl_idioma_id Int?
+  idioma        tbl_idioma? @relation(fields: [tbl_idioma_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_IDIOMA_LEGENDA")
+
+  @@index([tbl_idioma_id], map: "FK_IDIOMA_LEGENDA")
+}
+
+model tbl_avaliacao {
+  id             Int          @id @default(autoincrement())
+  nota           Decimal      @db.Decimal(3, 1)
+  comentario     String?      @db.Text
+  data_avaliacao DateTime     @db.Date
+  tbl_usuario_id Int?
+  tbl_filme_id   Int?
+  filme          tbl_filme?   @relation(fields: [tbl_filme_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_FILME_AVALIACAO")
+  usuario        tbl_usuario? @relation(fields: [tbl_usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_USUARIO_AVALIACAO")
+
+  @@index([tbl_filme_id], map: "FK_FILME_AVALIACAO")
+  @@index([tbl_usuario_id], map: "FK_USUARIO_AVALIACAO")
+}
+
+model tbl_filme_genero {
+  tbl_filme_id  Int
+  tbl_genero_id Int
+  filme         tbl_filme  @relation(fields: [tbl_filme_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_FILME_GENERO")
+  genero        tbl_genero @relation(fields: [tbl_genero_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_GENERO_FILME")
+
+  @@id([tbl_filme_id, tbl_genero_id])
+  @@index([tbl_genero_id], map: "FK_GENERO_FILME")
+}
+
+model tbl_filme_produtora {
+  tbl_filme_id     Int
+  tbl_produtora_id Int
+  filme            tbl_filme     @relation(fields: [tbl_filme_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_FILME_PRODUTORA")
+  produtora        tbl_produtora @relation(fields: [tbl_produtora_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_PRODUTORA_FILME")
+
+  @@id([tbl_filme_id, tbl_produtora_id])
+  @@index([tbl_produtora_id], map: "FK_PRODUTORA_FILME")
+}
+
+model tbl_filme_ator {
+  tbl_filme_id Int
+  tbl_ator_id  Int
+  ator         tbl_ator  @relation(fields: [tbl_ator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_ATOR_FILME")
+  filme        tbl_filme @relation(fields: [tbl_filme_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_FILME_ATOR")
+
+  @@id([tbl_filme_id, tbl_ator_id])
+  @@index([tbl_ator_id], map: "FK_ATOR_FILME")
+}
+
+model tbl_filme_diretor {
+  tbl_filme_id   Int
+  tbl_diretor_id Int
+  diretor        tbl_diretor @relation(fields: [tbl_diretor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_DIRETOR_FILME")
+  filme          tbl_filme   @relation(fields: [tbl_filme_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_FILME_DIRETOR")
+
+  @@id([tbl_filme_id, tbl_diretor_id])
+  @@index([tbl_diretor_id], map: "FK_DIRETOR_FILME")
+}
+
+model tbl_ator_nacionalidade {
+  tbl_ator_id          Int
+  tbl_nacionalidade_id Int
+  ator                 tbl_ator          @relation(fields: [tbl_ator_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_ATOR_NACIONALIDADE")
+  nacionalidade        tbl_nacionalidade @relation(fields: [tbl_nacionalidade_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_NACIONALIDADE_ATOR")
+
+  @@id([tbl_ator_id, tbl_nacionalidade_id])
+  @@index([tbl_nacionalidade_id], map: "FK_NACIONALIDADE_ATOR")
+}
+
+model tbl_diretor_nacionalidade {
+  tbl_diretor_id       Int
+  tbl_nacionalidade_id Int
+  diretor              tbl_diretor       @relation(fields: [tbl_diretor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_DIRETOR_NACIONALIDADE")
+  nacionalidade        tbl_nacionalidade @relation(fields: [tbl_nacionalidade_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_NACIONALIDADE_DIRETOR")
+
+  @@id([tbl_diretor_id, tbl_nacionalidade_id])
+  @@index([tbl_nacionalidade_id], map: "FK_NACIONALIDADE_DIRETOR")
+}
